@@ -1,0 +1,37 @@
+<!--/*
+  The source's Qute item template, rewritten for Thymeleaf.
+
+  This template is used two ways, exactly as the source's is: included once per row by
+  todos/list.html, and rendered on its own as the response to an htmx POST. Naming the
+  fragment `item(todo)` serves the first; the model attribute `todo` serves the second.
+
+  The unparameterised attribute injections the source relies on —
+  `{todo.getCompleted() ? 'checked' : ''}` as a bare boolean attribute — become th:checked,
+  which emits checked="checked" when true and omits the attribute when false. Same DOM,
+  different characters; see FINDINGS.md §2.
+*/-->
+<li th:fragment="item(todo)" th:class="${todo.getCompleted()} ? 'completed' : ''" th:id="|item-${todo.id}|">
+  <div class="view">
+    <form
+      th:action="|/todos/${todo.id}/toggle|"
+      method="POST"
+      th:id="|toggle-${todo.id}|"
+      th:hx-post="|/todos/${todo.id}/toggle|"
+      th:hx-target="|#item-${todo.id}|"
+      hx-swap="outerhtml"
+    ></form>
+    <input
+      class="toggle"
+      type="checkbox"
+      th:checked="${todo.getCompleted()}"
+      th:attr="onclick=|document.getElementById('toggle-${todo.id}').requestSubmit()|"
+    />
+    <label th:text="${todo.title}">title</label>
+    <form th:action="|/todos/${todo.id}/delete|" method="POST">
+      <button type="submit" class="destroy"></button>
+    </form>
+  </div>
+  <form th:action="|/todos/${todo.id}|" method="POST">
+    <input class="edit" name="title" th:value="${todo.title}" />
+  </form>
+</li>

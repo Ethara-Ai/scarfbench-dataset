@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent><groupId>io.helidon.applications</groupId><artifactId>helidon-mp</artifactId><version>4.1.4</version></parent>
+    <groupId>helidon.tutorial</groupId><artifactId>address-book</artifactId><version>0.0.1-SNAPSHOT</version>
+    <properties>
+        <mainClass>helidon.tutorial.addressbook.Main</mainClass>
+        <maven.compiler.source>17</maven.compiler.source><maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <dependencies>
+        <dependency><groupId>io.helidon.microprofile.bundles</groupId><artifactId>helidon-microprofile-core</artifactId></dependency>
+        <dependency><groupId>io.helidon.integrations.cdi</groupId><artifactId>helidon-integrations-cdi-datasource-hikaricp</artifactId></dependency>
+        <dependency><groupId>io.helidon.integrations.cdi</groupId><artifactId>helidon-integrations-cdi-jpa</artifactId></dependency>
+        <dependency><groupId>io.helidon.integrations.cdi</groupId><artifactId>helidon-integrations-cdi-jta-weld</artifactId></dependency>
+        <dependency><groupId>org.hibernate.orm</groupId><artifactId>hibernate-core</artifactId><version>6.4.4.Final</version></dependency>
+        <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>runtime</scope></dependency>
+        <dependency><groupId>org.glassfish.jersey.media</groupId><artifactId>jersey-media-json-binding</artifactId></dependency>
+    </dependencies>
+    <build><finalName>${project.artifactId}</finalName>
+        <plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId>
+            <executions><execution><id>copy-libs</id><phase>package</phase><goals><goal>copy-dependencies</goal></goals>
+                <configuration><outputDirectory>${project.build.directory}/libs</outputDirectory><includeScope>runtime</includeScope></configuration>
+            </execution></executions></plugin></plugins>
+    </build>
+</project>

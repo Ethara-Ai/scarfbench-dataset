@@ -1,0 +1,34 @@
+<!--/*
+  The source's Qute layout template, rewritten for Thymeleaf.
+
+    {#insert title}Todos{/}  ->  <title th:replace="${pageTitle}">Todos</title>
+    {#insert body}No body!{/} ->  <th:block th:replace="${content}">No body!</th:block>
+
+  Qute's insert/include decorator maps onto Thymeleaf's parameterised-fragment layout: the
+  page template replaces its own root element with base's `page` fragment and passes its
+  title element and its body block in as fragment expressions. No layout dialect is needed,
+  and — because both parameters carry a default — the fallback text survives too.
+
+  <th:block> renders no tag of its own, so the decorated markup lands directly inside
+  <section class="todoapp">, exactly as the source's does.
+*/-->
+<!doctype html>
+<html lang="en" th:fragment="page(pageTitle, content)">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:replace="${pageTitle}">Todos</title>
+    <script src="/webjars/htmx.org/dist/htmx.min.js"></script>
+    <script src="/todos.js"></script>
+    <link rel="stylesheet" href="/webjars/todomvc-app-css/index.css" />
+  </head>
+  <body>
+    <section class="todoapp" hx-boost="true"><th:block th:replace="${content}">No body!</th:block></section>
+    <footer class="info">
+      <p>Double-click to edit a todo</p>
+      <p>Template by <a href="http://sindresorhus.com">Sindre Sorhus</a></p>
+      <p>Created by <a href="https://derkoe.dev">derkoe</a></p>
+      <p>Part of <a href="http://todomvc.com">TodoMVC</a></p>
+    </footer>
+  </body>
+</html>

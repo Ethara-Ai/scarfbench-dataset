@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ScarfBench target variant — quarkus-htmx-todos / spring.
+  Expert reference for the directed task τ = (quarkus-htmx-todos, quarkus, spring).
+
+  Every dependency below carries the architectural concern it fills, and the source
+  coordinate it answers. Nothing here was produced by replacing a coordinate string: the
+  source's eight runtime extensions map onto seven Spring dependencies, and one of those
+  seven (webjars-locator-lite) is here only because a capability the source received from
+  an extension has to be asked for explicitly on this side.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- Build management: quarkus-bom (imported) -> spring-boot-starter-parent. -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.7</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.github.derkoe.todos</groupId>
+  <artifactId>todos</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <properties>
+    <!-- Java 21: the harness base image is maven:3.9.12-ibm-semeru-21-noble (F1/B6). -->
+    <java.version>21</java.version>
+    <maven.compiler.parameters>true</maven.compiler.parameters>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <htmx.version>2.0.10</htmx.version>
+    <todomvc-app-css.version>2.4.3</todomvc-app-css.version>
+  </properties>
+
+  <dependencies>
+    <!-- REST/HTTP + DI: quarkus-resteasy + quarkus-arc -> Spring MVC and the Spring
+         container, both inside the web starter. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- Server-side templating: quarkus-resteasy-qute -> Thymeleaf. The engine changes,
+         so every template is rewritten; the rendered markup is the contract. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+
+    <!-- Persistence + transactions: quarkus-hibernate-orm-panache -> Spring Data JPA.
+         Hibernate is the same ORM on both sides; the Panache active-record statics are
+         re-expressed as an explicit repository. Brings spring-tx, which backs the
+         @Transactional boundaries the source declared with jakarta.transaction. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!-- Schema migration: quarkus-flyway -> flyway-core. Same migration scripts, same
+         classpath location (db/migration), same run-at-start semantics. -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+
+    <!-- JDBC driver: quarkus-jdbc-h2 -> com.h2database:h2. Both variants use H2
+         in-memory; see the source variant's pom header for why it is not PostgreSQL. -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Health: quarkus-smallrye-health -> Spring Boot Actuator. The capability maps; the
+         path does not (/q/health vs /actuator/health), so it is deliberately outside the
+         asserted contract. See FINDINGS.md. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!-- Version-less webjar paths: quarkus-webjars-locator -> webjars-locator-lite, which
+         Spring Boot auto-configures into the resource chain. Without it the templates'
+         /webjars/htmx.org/dist/htmx.min.js would have to carry the version, and the
+         rendered HTML — the contract — would change. -->
+    <dependency>
+      <groupId>org.webjars</groupId>
+      <artifactId>webjars-locator-lite</artifactId>
+    </dependency>
+
+    <!-- Front-end assets. Preserved verbatim, including versions. -->
+    <dependency>
+      <groupId>org.webjars.npm</groupId>
+      <artifactId>htmx.org</artifactId>
+      <version>${htmx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.webjars.npm</groupId>
+      <artifactId>todomvc-app-css</artifactId>
+      <version>${todomvc-app-css.version}</version>
+    </dependency>
+
+    <!-- The source's quarkus-junit5 / rest-assured test stack is deliberately not
+         migrated: the oracle is framework-neutral and lives outside the application, and
+         reusing source-framework unit tests would make the measurement circular (G7). -->
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Build plugin: quarkus-maven-plugin -> spring-boot-maven-plugin. Declared at the
+           project root, which is where the harness Dockerfile's `mvn spring-boot:run`
+           resolves the prefix. Packaging: Quarkus fast-jar -> Boot executable jar. -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

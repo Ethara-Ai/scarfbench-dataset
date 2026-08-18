@@ -1,0 +1,20 @@
+[package]
+name = "counter_actix"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "counter_actix"
+path = "src/main.rs"
+
+[dependencies]
+actix-web = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = "0.8"
+tokio = { version = "1", features = ["full"] }
+
+[profile.release]
+opt-level = 1
+lto = false
+codegen-units = 16

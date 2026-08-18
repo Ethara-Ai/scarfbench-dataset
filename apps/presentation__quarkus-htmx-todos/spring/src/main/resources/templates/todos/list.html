@@ -1,0 +1,67 @@
+<!--/*
+  The source's Qute list template, rewritten for Thymeleaf.
+
+  Structure: the root <html> replaces itself with base's `page` fragment, handing over this
+  template's <title> element and its `bodyContent` block — the target's equivalent of Qute's
+  {#include base}{#title}…{/title}{#body}…{/body}{/include}.
+
+  Note the nesting on the item loop. Thymeleaf runs fragment inclusion (precedence 1) before
+  iteration (precedence 2), so th:each and th:replace on the *same* element would include
+  once and never iterate. The loop therefore wraps the inclusion instead of sharing a tag
+  with it. <th:block> emits no markup, so the rendered <ul> contains only the <li> items —
+  the same as the source's {#for}{#include}{/for}.
+*/-->
+<!doctype html>
+<html th:replace="~{base :: page(~{::title}, ~{::bodyContent})}">
+  <head>
+    <title>Quarkus/htmx • TodoMVC</title>
+  </head>
+  <body>
+    <th:block th:fragment="bodyContent">
+      <header class="header">
+        <h1>todos</h1>
+        <form action="/todos" method="POST" hx-target="#todo-list" hx-swap="beforeend">
+          <input class="new-todo" name="title" placeholder="What needs to be done?" autofocus />
+        </form>
+      </header>
+      <section class="main">
+        <form
+          action="/todos/toggle-all"
+          method="POST"
+          hx-post="/todos/toggle-all"
+          hx-select="#todo-list"
+          hx-target="#todo-list"
+          hx-swap="outerHTML"
+        >
+          <button type="submit" id="toggle-all" class="toggle-all"></button>
+          <label for="toggle-all">Mark all as complete</label>
+        </form>
+        <ul class="todo-list" id="todo-list">
+          <th:block th:each="todo : ${todos}">
+            <th:block th:replace="~{todos/item :: item(${todo})}"></th:block>
+          </th:block>
+        </ul>
+      </section>
+      <footer class="footer">
+        <!--/* Kept on one line: <th:block> emits no tag, so the surrounding whitespace is
+               all that separates the count from the noun, and the rendered text node has to
+               read "2 items left" exactly as the source's does. */-->
+        <span class="todo-count"> <strong th:text="${itemsLeft}">0</strong> <th:block th:text="${itemsLeft == 1} ? 'item' : 'items'">items</th:block> left </span>
+        <ul class="filters">
+          <li>
+            <a th:class="${all} ? 'selected' : ''" href="/todos">All</a>
+          </li>
+          <li>
+            <a th:class="${active} ? 'selected' : ''" href="/todos/active">Active</a>
+          </li>
+          <li>
+            <a th:class="${completed} ? 'selected' : ''" href="/todos/completed">Completed</a>
+          </li>
+        </ul>
+        <form action="/todos/clear-completed" method="POST">
+          <button class="clear-completed">Clear completed</button>
+        </form>
+      </footer>
+    </th:block>
+  </body>
+</html>

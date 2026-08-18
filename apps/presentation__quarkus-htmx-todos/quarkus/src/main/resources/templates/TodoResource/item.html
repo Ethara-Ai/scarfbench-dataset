@@ -1,0 +1,26 @@
+{@todos.Todo todo}
+<li class="{todo.getCompleted() ? 'completed' : ''}" id="item-{todo.id}">
+  <div class="view">
+    <form
+      action="/todos/{todo.id}/toggle"
+      method="POST"
+      id="toggle-{todo.id}"
+      hx-post="/todos/{todo.id}/toggle"
+      hx-target="#item-{todo.id}"
+      hx-swap="outerhtml"
+    ></form>
+    <input
+      class="toggle"
+      type="checkbox"
+      {todo.getCompleted() ? 'checked' : ''}
+      onclick="document.getElementById('toggle-{todo.id}').requestSubmit()"
+    />
+    <label>{todo.title}</label>
+    <form action="/todos/{todo.id}/delete" method="POST">
+      <button type="submit" class="destroy"></button>
+    </form>
+  </div>
+  <form action="/todos/{todo.id}" method="POST">
+    <input class="edit" name="title" value="{todo.title}" />
+  </form>
+</li>

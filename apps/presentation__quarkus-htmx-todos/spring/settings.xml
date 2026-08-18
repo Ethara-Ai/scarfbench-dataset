@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Build-host workaround, NOT part of the benchmark contract.
+
+  repo.maven.apache.org returns HTTP 429 (Too Many Requests) for this build host,
+  which fails dependency resolution before any framework code is exercised
+  (checklist Gate L4: "check for harness error first").  Google's official
+  Maven Central mirror serves the identical artifact set and is used instead.
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+  <mirrors>
+    <mirror>
+      <id>gcs-maven-central</id>
+      <name>Google Maven Central mirror</name>
+      <url>https://maven-central.storage-download.googleapis.com/maven2</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>

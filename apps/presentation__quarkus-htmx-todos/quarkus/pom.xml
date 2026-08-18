@@ -1,0 +1,192 @@
+<?xml version="1.0"?>
+<!--
+  ScarfBench source variant — quarkus-htmx-todos / quarkus.
+
+  Upstream is derkoe/quarkus-htmx-todos. Two things differ from upstream, both forced by
+  the benchmark environment rather than by the migration, and both applied identically to
+  the spring variant so the pair stays comparable:
+
+    1. Java 25 -> 21.  The harness base image is maven:3.9.12-ibm-semeru-21-noble
+       (checklist F1/B6); upstream targets 25, which that JDK cannot compile.
+    2. PostgreSQL -> H2 in-memory.  The focused tier is a single application container
+       (paper 1, tier table); upstream needs an external Postgres via Compose. The Flyway
+       migrations, the entity model and the UUID primary key are unchanged — only the
+       JDBC driver and the URL move.
+
+    3. quarkus-kubernetes and quarkus-container-image-jib removed, with the
+       quarkus.kubernetes.*, quarkus.openshift.* and quarkus.container-image.* keys that
+       configure them.  Neither produces observable behaviour: one writes deployment
+       manifests into target/, the other builds an image only when explicitly asked to,
+       and the benchmark's launch contract is the Dockerfile.  They are also expensive —
+       quarkus-kubernetes drags in the whole fabric8 Kubernetes/OpenShift model tree,
+       several hundred artifacts, none of which any gate exercises.  Scoped out so the
+       task is about the application, per paper 3.2 ("no manual setup beyond
+       containerization").
+
+  Everything else is upstream's.
+-->
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.github.derkoe.todos</groupId>
+  <artifactId>todos</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <properties>
+    <compiler-plugin.version>3.15.0</compiler-plugin.version>
+    <htmx.version>2.0.10</htmx.version>
+    <todomvc-app-css.version>2.4.3</todomvc-app-css.version>
+    <maven.compiler.parameters>true</maven.compiler.parameters>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <quarkus-plugin.version>3.30.5</quarkus-plugin.version>
+    <quarkus.platform.version>3.30.5</quarkus.platform.version>
+    <surefire-plugin.version>3.5.6</surefire-plugin.version>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <!-- Build management: the platform BOM. -->
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <!-- Schema migration: Flyway, run at application start. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-flyway</artifactId>
+    </dependency>
+    <!-- Persistence: Hibernate ORM with the Panache active-record pattern. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-hibernate-orm-panache</artifactId>
+    </dependency>
+    <!-- Server-side templating: Qute, wired into the JAX-RS layer. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-qute</artifactId>
+    </dependency>
+    <!-- Health checks. Exposed at /q/health — a framework-specific path. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-health</artifactId>
+    </dependency>
+    <!-- JDBC driver. Upstream: quarkus-jdbc-postgresql. See the header note. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jdbc-h2</artifactId>
+    </dependency>
+    <!-- Dependency injection: CDI via ArC. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-arc</artifactId>
+    </dependency>
+    <!-- REST/HTTP: JAX-RS via RESTEasy Classic. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy</artifactId>
+    </dependency>
+    <!-- Serves webjar assets at version-less /webjars/** paths. -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-webjars-locator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.webjars.npm</groupId>
+      <artifactId>htmx.org</artifactId>
+      <version>${htmx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.webjars.npm</groupId>
+      <artifactId>todomvc-app-css</artifactId>
+      <version>${todomvc-app-css.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <!-- Build plugin: augmentation + packaging. Declared at the project root, which is
+           where the harness Dockerfile's `mvn quarkus:run` resolves the prefix. -->
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus-plugin.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <goals>
+              <goal>build</goal>
+              <goal>generate-code</goal>
+              <goal>generate-code-tests</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${compiler-plugin.version}</version>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire-plugin.version}</version>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <maven.home>${maven.home}</maven.home>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <id>native</id>
+      <activation>
+        <property>
+          <name>native</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>${surefire-plugin.version}</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+                <configuration>
+                  <systemPropertyVariables>
+                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                    <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                    <maven.home>${maven.home}</maven.home>
+                  </systemPropertyVariables>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <properties>
+        <quarkus.package.type>native</quarkus.package.type>
+      </properties>
+    </profile>
+  </profiles>
+</project>
