@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven mirror used by the containerized build.
+  repo.maven.apache.org rate-limits (HTTP 429) unauthenticated CI/container
+  traffic; the Google-hosted Maven Central mirror serves identical artifacts.
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+  <mirrors>
+    <mirror>
+      <id>central-gcs</id>
+      <name>Maven Central via Google Cloud Storage</name>
+      <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
