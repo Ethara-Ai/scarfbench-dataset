@@ -1,0 +1,7 @@
+# Build context trimming — the Quarkus image only needs the backend module
+frontend/
+**/target/
+**/node_modules/
+**/.git/
+*.war
+target/

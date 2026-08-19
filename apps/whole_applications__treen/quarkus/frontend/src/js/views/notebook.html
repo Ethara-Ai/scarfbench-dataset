@@ -1,0 +1,105 @@
+<div id="notebook-container">
+  <oj-bind-if test="[[!notesLoading && notesProvider.isEmpty() === 'yes']]">
+    <h6 class="oj-sm-margin-4x-top">
+      You don't have any notes in your notebook. <span>
+        <a on-click="[[createFirstNote]]">Click here</a>
+      </span> to create the first note.
+    </h6>
+  </oj-bind-if>
+  <oj-bind-if test="[[notesLoading]]">
+    <h6 class="oj-sm-margin-4x-top">
+      Your notebook is loading...
+      <oj-progress-circle id="progressCircle" value="-1">
+      </oj-progress-circle>
+    </h6>
+  </oj-bind-if>
+  <oj-tree-view id="treeview" data="[[notesProvider]]">
+    <oj-menu slot="contextMenu" on-oj-action="[[menuAction]]" on-oj-before-open="[[menuBeforeOpen]]">
+      <oj-bind-if test="[[!isPasteMode()]]">
+        <oj-option id="node-add-child" value="addChild">Add child</oj-option>
+        <oj-option id="node-add-sibling" value="addSibling">Add sibling</oj-option>
+        <oj-option id="node-delete" value="delete">Delete</oj-option>
+        <oj-option id="node-edit" value="edit">Edit</oj-option>
+        <oj-option id="node-cut" value="cut">Cut</oj-option>
+        <oj-option id="node-gpx" value="exportGpx">Export GPX</oj-option>
+      </oj-bind-if>
+      <oj-bind-if test="[[isPasteMode()]]">
+        <oj-option id="node-paste-child" value="pasteChild">Paste child</oj-option>
+        <oj-option id="node-paste-sibling" value="pasteSibling">Paste sibling</oj-option>
+        <oj-option id="node-cancel-cut" value="cancelCut">Cancel cut</oj-option>
+      </oj-bind-if>
+    </oj-menu>
+    <template slot="itemTemplate" data-oj-as="row">
+      <span class="oj-treeview-item-icon" on-click="[[openNoteAction]]"
+        :class="[[getNoteIconStyleClass(row.data.id)]]"
+      ></span>
+      <span class="oj-treeview-item-text"
+        :style="[[row.data.flags.includes('STRIKE') ? {'text-decoration' : 'line-through'} : {}]]"
+      >
+        <oj-bind-if test="[[row.data.flags.includes('CHECK')]]">
+          <span style="color: green;">✔</span>
+        </oj-bind-if>
+        <oj-bind-if test="[[row.data.flags.includes('CROSS')]]">
+          <span style="color: red;">❌</span>
+        </oj-bind-if>
+        <oj-bind-if test="[[AppUtils.isStringNotBlank(row.data.link)
+                            && AppUtils.isStringNotBlank(row.data.title)]]">
+          <a referrerpolicy="no-referrer" target="_blank" :href="[[row.data.link]]">
+            <oj-bind-text value="[[row.data.title]]"></oj-bind-text>
+          </a>
+        </oj-bind-if>
+        <oj-bind-if test="[[AppUtils.isStringBlank(row.data.link) 
+                            && AppUtils.isStringNotBlank(row.data.title)]]">
+          <oj-bind-text value="[[row.data.title]]"></oj-bind-text>
+        </oj-bind-if>
+        <oj-bind-if test="[[AppUtils.isStringNotBlank(row.data.link) 
+                            && AppUtils.isStringBlank(row.data.title)]]">
+          <a referrerpolicy="no-referrer" target="_blank" :href="[[row.data.link]]">
+            <oj-bind-text value="[[row.data.link]]"></oj-bind-text>
+          </a>
+        </oj-bind-if>
+      </span>
+    </template>
+  </oj-tree-view>
+  <oj-dialog id="note-dialog" dialog-title="Note" cancel-behavior="icon" drag-affordance="title-bar">
+    <div slot="body">
+      <oj-form-layout max-columns="1" direction="row">
+        <oj-input-text class="oj-form-control-max-width-md" placeholder="Title" label-hint="title"
+          value="{{currentTitle}}" messages-custom="[[titleErrors]]" disabled="[[inputDisabled]]">
+        </oj-input-text>
+        <oj-input-text class="oj-form-control-max-width-md" placeholder="Link" label-hint="link" value="{{currentLink}}"
+          messages-custom="[[linkErrors]]" disabled="[[inputDisabled]]">
+        </oj-input-text>
+        <oj-text-area class="oj-form-control-max-width-md" value="{{currentDescription}}" label-hint="description"
+          rows="5">
+        </oj-text-area>
+        <oj-checkboxset id="noteCheckboxset" value="{{currentFlags}}" class="oj-choice-direction-row">
+          <oj-option value="STRIKE"><del>del</del></oj-option>
+          <oj-option value="CHECK"><span style="color: green;">✔</span></oj-option>
+          <oj-option value="CROSS"><span style="color: red;">❌</span></oj-option>
+        </oj-checkboxset>
+      </oj-form-layout>
+    </div>
+    <div slot="footer">
+      <oj-button id="note-submit" chroming="callToAction" on-oj-action="[[submitAction]]" disabled="[[inputDisabled]]">
+        Submit
+      </oj-button>
+      <oj-button id="note-close" on-oj-action="[[closeNoteDialog]]" disabled="[[inputDisabled]]">
+        Close
+      </oj-button>
+    </div>
+  </oj-dialog>
+  <oj-dialog id="delete-dialog" dialog-title="Warning" cancel-behavior="icon" drag-affordance="title-bar">
+    <div slot="body">
+      The note has children. Are you sure you want to delete the note with children notes?
+    </div>
+    <div slot="footer">
+      <oj-button id="yes-delete" on-oj-action="[[deleteNoteFromDialog]]">
+        YES
+      </oj-button>
+      <oj-button id="no-delete" on-oj-action="[[closeDeleteDialog]]">
+        NO
+      </oj-button>
+    </div>
+  </oj-dialog>
+</div>

@@ -1,0 +1,404 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>net.sf.squirrel-sql</groupId>
+	<artifactId>squirrel-sql-web</artifactId>
+	<version>1.0</version>
+	<packaging>jar</packaging>
+	<name>Database web client</name>
+	<description>Quarkus application (migrated from a JavaEE/JAX-RS WAR), with Dash Material frontend</description>
+
+	<properties>
+		<maven.compiler.release>17</maven.compiler.release>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<failOnMissingWebXml>false</failOnMissingWebXml>
+		<version.squirrelsql>4.1.0</version.squirrelsql>
+
+		<!-- Quarkus platform -->
+		<quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+		<quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+		<quarkus.platform.version>3.15.4</quarkus.platform.version>
+		<surefire-plugin.version>3.2.5</surefire-plugin.version>
+		<compiler-plugin.version>3.13.0</compiler-plugin.version>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>centralRepository</id>
+			<url>https://repo1.maven.org/maven2</url>
+		</repository>
+		<repository>
+			<id>localRepository</id>
+			<url>file://${basedir}/local-maven-repo</url>
+		</repository>
+	</repositories>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>${quarkus.platform.group-id}</groupId>
+				<artifactId>${quarkus.platform.artifact-id}</artifactId>
+				<version>${quarkus.platform.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+		<!-- ===================== Quarkus extensions ===================== -->
+		<!-- RESTEasy Classic: preserves custom MessageBodyReader/Writer providers -->
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-resteasy</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-resteasy-jackson</artifactId>
+		</dependency>
+		<!-- Servlet API only (NOT the undertow extension): the JAX-RS layer was
+		     refactored to use jakarta.ws.rs HttpHeaders/Response instead of servlet
+		     types. The API jar is kept so TokensManager.extractTokenFromRequest and
+		     its unit test still compile/run. Adding quarkus-undertow instead pulls a
+		     web-fragment scanner that clashes with a legacy Woodstox StAX provider. -->
+		<dependency>
+			<groupId>jakarta.servlet</groupId>
+			<artifactId>jakarta.servlet-api</artifactId>
+		</dependency>
+		<!-- CDI (ArC) -->
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-arc</artifactId>
+		</dependency>
+		<!-- Replacement for EJB @Schedule timers -->
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-scheduler</artifactId>
+		</dependency>
+		<!-- Serve the built Vue frontend as static resources (META-INF/resources) -->
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-junit5</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.rest-assured</groupId>
+			<artifactId>rest-assured</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- ===================== Application dependencies ===================== -->
+		<dependency>
+			<groupId>net.sf.squirrel-sql</groupId>
+			<artifactId>squirrel-sql</artifactId>
+			<version>${version.squirrelsql}</version>
+		</dependency>
+
+		<!-- JAXB annotations bridge for Jackson (jakarta namespace) -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-jakarta-xmlbind-annotations</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt</artifactId>
+			<version>0.9.1</version>
+		</dependency>
+		<!-- Migration note: jjwt 0.9.1 Base64-encodes JWTs via
+		     javax.xml.bind.DatatypeConverter, which was removed from the JDK in
+		     Java 11+. The original app ran on Java 8 (Glassfish) where it was
+		     built in. Under Java 17/21 we must supply the JAXB (javax namespace)
+		     API + impl explicitly. This is separate from the jakarta.xml.bind
+		     used by the Jackson introspector / DTO @XmlTransient annotations. -->
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<version>3.6.0</version>
+			<!-- not only for tests: SessionsManager mocks Swing panels at runtime -->
+		</dependency>
+
+		<!-- One JDBC Driver, as an example -->
+		<dependency>
+			<groupId>org.apache.derby</groupId>
+			<artifactId>derby</artifactId>
+			<version>10.1.1.0</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Following dependencies are copied from squirrel-sql:4.1.0 artifact -->
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jfree</groupId>
+			<artifactId>jfreechart</artifactId>
+			<version>1.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate</artifactId>
+			<version>3.2.4.sp1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>javax.transaction</groupId>
+					<artifactId>jta</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>net.sf.ehcache</groupId>
+					<artifactId>ehcache</artifactId>
+				</exclusion>
+				<!-- Migration note: Hibernate 3.2 drags in a 2005-era ASM
+				     (asm:asm:1.5.3, asm-attrs) and cglib:2.1_3 whose bundled
+				     org.objectweb.asm.ClassWriter lacks the ClassWriter(int)
+				     constructor. That old class shadows the ASM 9.x used by
+				     SmallRye Config during Quarkus augmentation and breaks the
+				     build. These are only needed for Hibernate runtime bytecode
+				     enhancement, which the headless REST paths never exercise. -->
+				<exclusion>
+					<groupId>asm</groupId>
+					<artifactId>asm</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>asm</groupId>
+					<artifactId>asm-attrs</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>cglib</groupId>
+					<artifactId>cglib</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>3.3.1.ga</version>
+		</dependency>
+		<dependency>
+			<groupId>org.dom4j</groupId>
+			<artifactId>dom4j</artifactId>
+			<version>2.1.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.jgoodies</groupId>
+			<artifactId>forms</artifactId>
+			<version>1.0.7</version>
+		</dependency>
+		<dependency>
+			<groupId>org.devocative</groupId>
+			<artifactId>jmeld</artifactId>
+			<version>3.2</version>
+		</dependency>
+		<dependency>
+			<groupId>axis</groupId>
+			<artifactId>axis</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>axis</groupId>
+			<artifactId>axis-jaxrpc</artifactId>
+			<version>1.2-alpha-1</version>
+		</dependency>
+		<dependency>
+			<groupId>axis</groupId>
+			<artifactId>axis-saaj</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>axis</groupId>
+			<artifactId>axis-wsdl4j</artifactId>
+			<version>1.5.1</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-cli</groupId>
+			<artifactId>commons-cli</artifactId>
+			<version>1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.13</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-collections</groupId>
+			<artifactId>commons-collections</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-discovery</groupId>
+			<artifactId>commons-discovery</artifactId>
+			<version>0.2</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-httpclient</groupId>
+			<artifactId>commons-httpclient</artifactId>
+			<version>3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.java-diff-utils</groupId>
+			<artifactId>java-diff-utils</artifactId>
+			<version>4.5</version>
+		</dependency>
+		<dependency>
+			<groupId>com.jidesoft</groupId>
+			<artifactId>jide-oss</artifactId>
+			<version>2.4.8</version>
+			<!-- Migration note: jide-oss 2.4.8 declares a broken system-scoped
+			     dependency (aqua:aqua:5.0 -> ${basedir}/libs/laf.jar) that the
+			     Quarkus bootstrap resolver cannot satisfy. It is a macOS
+			     look-and-feel jar irrelevant to a headless server, so exclude it. -->
+			<exclusions>
+				<exclusion>
+					<groupId>aqua</groupId>
+					<artifactId>aqua</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>3.9</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fifesoft</groupId>
+			<artifactId>rstaui</artifactId>
+			<version>3.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fifesoft</groupId>
+			<artifactId>rsyntaxtextarea</artifactId>
+			<version>3.1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fifesoft.rtext</groupId>
+			<artifactId>rtext</artifactId>
+			<version>2.0.7</version>
+		</dependency>
+		<dependency>
+			<groupId>javazoom</groupId>
+			<artifactId>jlayer</artifactId>
+			<version>1.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.antlr</groupId>
+			<artifactId>stringtemplate</artifactId>
+			<version>4.0.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.xmlbeans</groupId>
+			<artifactId>xmlbeans</artifactId>
+			<version>2.6.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.nocrala.tools.texttablefmt</groupId>
+			<artifactId>text-table-formatter</artifactId>
+			<version>1.2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>be.cyberelf.nanoxml</groupId>
+			<artifactId>nanoxml</artifactId>
+			<version>2.2.3</version>
+		</dependency>
+		<dependency>
+			<groupId>net.steppschuh.markdowngenerator</groupId>
+			<artifactId>markdowngenerator</artifactId>
+			<version>1.3.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.jsqlparser</groupId>
+			<artifactId>jsqlparser</artifactId>
+			<version>0.8.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jgit</groupId>
+			<artifactId>org.eclipse.jgit</artifactId>
+			<version>5.6.0.201912101111-r</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- Migration note: the original org.eclipse.core.runtime API was pulled
+		     from the (now unreachable) kermeta repository as
+		     org.kermeta.eclipse:org.eclipse.equinox.common:3.6.0.v20100503.
+		     Replaced with the Maven Central artifact, whose
+		     org.eclipse.core.runtime API is source/binary compatible. -->
+		<dependency>
+			<groupId>org.eclipse.platform</groupId>
+			<artifactId>org.eclipse.equinox.common</artifactId>
+			<version>3.20.0</version>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.15</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.sun.jmx</groupId>
+					<artifactId>jmxri</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.sun.jdmk</groupId>
+					<artifactId>jmxtools</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>javax.jms</groupId>
+					<artifactId>jms</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>javax.mail</groupId>
+					<artifactId>mail</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>${quarkus.platform.group-id}</groupId>
+				<artifactId>quarkus-maven-plugin</artifactId>
+				<version>${quarkus.platform.version}</version>
+				<extensions>true</extensions>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build</goal>
+							<goal>generate-code</goal>
+							<goal>generate-code-tests</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${compiler-plugin.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>${surefire-plugin.version}</version>
+				<configuration>
+					<systemPropertyVariables>
+						<java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+						<maven.home>${maven.home}</maven.home>
+						<!-- The embedded SQuirreL core is a Swing app; force headless. -->
+						<java.awt.headless>true</java.awt.headless>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

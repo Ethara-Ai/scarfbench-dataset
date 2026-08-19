@@ -1,0 +1,19 @@
+<div id="login-container">
+  <h4 class="oj-sm-margin-4x-top">
+    Login
+  </h4>
+  <oj-form-layout max-columns="1" direction="row">
+    <oj-input-text placeholder="Login" label-hint="login" messages-custom="[[loginErrors]]" value="{{loginText}}"
+      disabled="[[inputDisabled]]">
+    </oj-input-text>
+    <oj-input-password placeholder="Password" label-hint="password" messages-custom="[[passwordErrors]]"
+      value="{{passwordText}}" on-value-changed="[[passwordTypeAction]]" disabled="[[inputDisabled]]" mask-icon="visible">
+    </oj-input-password>
+    <oj-checkboxset id="remember-me-checkbox" value="{{rememberMeSet}}" disabled="[[inputDisabled]]">
+      <oj-option value="rememberMe">Remember me</oj-option>
+    </oj-checkboxset>
+    <oj-button id="sign-in" chroming="callToAction" on-oj-action="[[loginAction]]" disabled="[[inputDisabled]]">
+      SIGN IN
+    </oj-button>
+  </oj-form-layout>
+</div>

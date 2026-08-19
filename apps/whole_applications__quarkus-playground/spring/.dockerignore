@@ -1,0 +1,13 @@
+target/
+.git/
+.idea/
+*.iml
+smoke/
+eval/
+eval_out/
+*.feature
+CHANGELOG.md
+README.md
+Makefile
+scripts/
+githooks/

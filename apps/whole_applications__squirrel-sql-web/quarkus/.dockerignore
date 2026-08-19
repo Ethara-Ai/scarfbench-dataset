@@ -1,0 +1,7 @@
+target/
+src/main/javascript/node_modules/
+.git/
+.settings/
+screenshots/
+*.log
+server.key
