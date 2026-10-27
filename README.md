@@ -36,3 +36,9 @@ at copy time — do NOT strip them here.
 
 Harbor adapter: `harbor/adapters/scarfbench/` (see its `README.md` for the full
 task-generation pipeline).
+
+---
+
+## Copyright
+
+Copyright (c) 2026 Green Rider Technology LLP (Ethara AI). All rights reserved.
